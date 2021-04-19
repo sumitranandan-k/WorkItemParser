@@ -215,6 +215,10 @@ def processSheet(df, sheetName):
     #add empty columns for taskType and task names
     df['Title 4'] = ''
     df['Title 5'] = ''
+    
+    df['colFromIndex'] = df.index
+    df.sort_values(by=['Title 1','Title 2', 'colFromIndex'], ignore_index = True)
+    df.reset_index(drop=True)
        
     #remove the columns as we do not need them anymore
     del df['Requirement ID']
@@ -332,6 +336,10 @@ def processSheet(df, sheetName):
     storySumUp = df2.groupby(['Title 3'])['Original Estimate'].sum()
     featureSumUp = df2.groupby(['Title 2'])['Original Estimate'].sum()
     epicSumUp = df2.groupby(['Title 1'])['Original Estimate'].sum()
+
+    # df2['colFromIndex'] = df2.index
+    # df2.sort_values(by=['Title 1','Title 2', 'colFromIndex'])
+    # df2.reset_index(drop=True)
 
     #cleanup 
     df2.loc[df2['Work Item Type'] != 'Epic', 'Title 1'] = ''
