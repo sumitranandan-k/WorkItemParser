@@ -74,29 +74,30 @@ def taskTypesDict():
 
 #percentage of dev estimate for a given task
 def parameters():
-    return {
+    tempDict =  {
             'customization':{
-                    tasksDict('FDD'):70,
-                    tasksDict('TDD'):40,                        
-                    tasksDict('FTest'):70,
-                    tasksDict('Rework'):11,
-                    tasksDict('Release'):0
+                    tasksDict['FDD']:70,
+                    tasksDict['TDD']:40,                        
+                    tasksDict['FTest']:70,
+                    tasksDict['Rework']:11,
+                    tasksDict['Release']:0
                     },
             'inbound':{
-                    tasksDict('FDD'):30,
-                    tasksDict('TDD'):60,                        
-                    tasksDict('FTest'):90,
-                    tasksDict('Rework'):19,
-                    tasksDict('Release'):0
+                    tasksDict['FDD']:30,
+                    tasksDict['TDD']:60,                        
+                    tasksDict['FTest']:90,
+                    tasksDict['Rework']:19,
+                    tasksDict['Release']:0
                     },                     
             'outbound':{
-                    tasksDict('FDD'):30,
-                    tasksDict('TDD'):60,                        
-                    tasksDict('FTest'):90,
-                    tasksDict('Rework'):19,
-                    tasksDict('Release'):0
+                    tasksDict['FDD']:30,
+                    tasksDict['TDD']:60,                        
+                    tasksDict['FTest']:90,
+                    tasksDict['Rework']:19,
+                    tasksDict['Release']:0
                     }
             }
+    return tempDict;
 
 def config_dev():
     tempDict = {
@@ -139,33 +140,35 @@ def outbound_dev():
     return tempDict
 
 def estimateParameters():
-    return {
+    tempDict = {
             'configuration' : config_dev(),
             'customization' :customization_dev(),
             'inbound'       :inbound_dev(),                     
             'outbound'      :outbound_dev()
             }
+    return tempDict
 
     
-def calcDevEstimates(taskName, parameter, devEstimates):
-    return {
-                complexities.get('VS')  :(devEstimates.get('VS')*parameter[taskName])/100,
-                complexities.get('S')   :(devEstimates.get('S')*parameter[taskName])/100,
-                complexities.get('M')   :(devEstimates.get('M')*parameter[taskName])/100,
-                complexities.get('C')   :(devEstimates.get('C')*parameter[taskName])/100,
-                complexities.get('VC')  :(devEstimates.get('VC')*parameter[taskName])/100,
-           }
-    
+def calcDevEstimates(percent, devEstimates):
+    tempDict = {
+                complexities.get('VS')  :(devEstimates.get(complexities.get('VS'))*percent)/100,
+                complexities.get('S')   :(devEstimates.get(complexities.get('S'))*percent)/100,
+                complexities.get('M')   :(devEstimates.get(complexities.get('M'))*percent)/100,
+                complexities.get('C')   :(devEstimates.get(complexities.get('C'))*percent)/100,
+                complexities.get('VC')  :(devEstimates.get(complexities.get('VC'))*percent)/100
+               }
+    return tempDict
 
 def getEstimateByTaskType(parameter, devEstimates):
-    return {
-                tasksDict('Dev'):devEstimates,
-                tasksDict('FDD'):calcDevEstimates('FDD', parameter.get('FDD'), tasksDict('Dev')),
-                tasksDict('TDD'):calcDevEstimates('TDD', parameter.get('FDD'), tasksDict('Dev')),
-                tasksDict('FTest'):calcDevEstimates('FTest', parameter.get('FDD'), tasksDict('Dev')),
-                tasksDict('Rework'):calcDevEstimates('Rework', parameter.get('FDD'), tasksDict('Dev')),
-                tasksDict('Release'):calcDevEstimates('Release', parameter.get('FDD'), tasksDict('Dev'))
+    tempDict = {
+                tasksDict['Dev']:devEstimates,
+                tasksDict['FDD']:calcDevEstimates(parameter.get(tasksDict['FDD']), devEstimates),
+                tasksDict['TDD']:calcDevEstimates(parameter.get(tasksDict['TDD']), devEstimates),
+                tasksDict['FTest']:calcDevEstimates(parameter.get(tasksDict['FTest']), devEstimates),
+                tasksDict['Rework']:calcDevEstimates(parameter.get(tasksDict['Rework']), devEstimates),
+                tasksDict['Release']:calcDevEstimates(parameter.get(tasksDict['Release']), devEstimates)
             }
+    return tempDict
 
 def estimates():
     tempDict =  {
@@ -173,11 +176,11 @@ def estimates():
                     taskTypesDictionary.get('int_config')     :{tasksDict.get('Config'):estimateParameters()['configuration']},
                     taskTypesDictionary.get('ce_config')      :{tasksDict.get('Config'):estimateParameters()['configuration']},           
                     taskTypesDictionary.get('pp_config')      :{tasksDict.get('Config'):estimateParameters()['configuration']},            
-                    taskTypesDictionary.get('ax_dev')         :getEstimateByTaskType(parameters().get('customization'), estimateParameters()['customization']),                                                                            
-                    taskTypesDictionary.get('ce_dev')         :getEstimateByTaskType(parameters().get('customization'), estimateParameters()['customization']),                                                                    
-                    taskTypesDictionary.get('pp_dev')         :getEstimateByTaskType(parameters().get('customization'), estimateParameters()['customization']),                                             
-                    taskTypesDictionary.get('int_inbound')    :getEstimateByTaskType(parameters().get('inbound'), estimateParameters()['inbound']),                                             
-                    taskTypesDictionary.get('int_outbound')   :getEstimateByTaskType(parameters().get('outbound'), estimateParameters()['outbound'])                            
+                    taskTypesDictionary.get('ax_dev')         :getEstimateByTaskType(parameter = parameters().get('customization'), devEstimates = estimateParameters()['customization']),                                                                            
+                    taskTypesDictionary.get('ce_dev')         :getEstimateByTaskType(parameter = parameters().get('customization'), devEstimates =  estimateParameters()['customization']),                                                                    
+                    taskTypesDictionary.get('pp_dev')         :getEstimateByTaskType(parameter = parameters().get('customization'), devEstimates = estimateParameters()['customization']),                                             
+                    taskTypesDictionary.get('int_inbound')    :getEstimateByTaskType(parameter = parameters().get('inbound'), devEstimates = estimateParameters()['inbound']),                                             
+                    taskTypesDictionary.get('int_outbound')   :getEstimateByTaskType(parameter = parameters().get('outbound'), devEstimates = estimateParameters()['outbound'])                            
                 }
     return tempDict
 
@@ -321,7 +324,7 @@ def processSheet(df, sheetName):
     df2 = pa.DataFrame(rows_list)    
     df2.fillna('', inplace = True)
         
-    for taskTypeColumn in tasksDict.values():
+    for taskTypeColumn in taskTypesDictionary.values():
         del df2[taskTypeColumn]
     
     #TODO1: can we loop all sheets in excel? -done
