@@ -194,7 +194,7 @@ def browseFiles():
     window.config(background = "white")
     
     #open the dialog and capture selection
-    selectedFile = filedialog.askopenfilename(initialdir = r'c:\temp', filetypes = filetypes, title = 'Select a file')
+    selectedFile = filedialog.askopenfilename(initialdir = r'D:\temp', filetypes = filetypes, title = 'Select a file')
     #close file picker
     window.withdraw()
     
@@ -225,31 +225,33 @@ def processSheet(df, sheetName):
     df.fillna('', inplace = True)
 
     #adds task that are common to every feature
-    def addCommonTasks(rowsList,  epic, feature):
+    def addCommonTasks(rowsList,  epic, feature, story):
         for taskName in commonTaskList:
             tempDict = {
-                'Work Item Type': 'Task',
-                'Title 4': taskName,
+                'Work Item Type'    : 'Task',
+                'Title 4'           : taskName,
                 'Original Estimate' : 0,
-                'Type of Work': 'Misc',
-                'Title 1':epic,
-                'Title 2':feature
+                'Type of Work'      : 'Misc',
+                'Title 1'           : epic,
+                'Title 2'           : feature,
+                'Title 3'           : story
                 }    
             rowsList.append(tempDict)
             
         return rowsList
             
     #adds task type per complexity and corresponding tasks with estimates
-    def addRowsPerTaskType(rowsList, taskType, complexity,  epic, feature):
+    def addRowsPerTaskType(rowsList, taskType, complexity,  epic, feature, story):
         listOfTasks = taskTypesDict().get(taskType)
         
         #add tasktype 
         tempDict = {
-            'Work Item Type': 'TaskType',
-            'Title 4': taskType,
-            'Complexity': complexity,
-            'Title 1':epic,
-            'Title 2':feature             
+            'Work Item Type'    : 'TaskType',
+            'Title 4'           : taskType,
+            'Complexity'        : complexity,
+            'Title 1'           : epic,
+            'Title 2'           : feature,
+            'Title 3'           : story             
             }    
         rowsList.append(tempDict)
           
@@ -257,25 +259,26 @@ def processSheet(df, sheetName):
         for taskName in listOfTasks:
             print (taskType + '-' + taskName + '-' + complexity)
             tempDict = {
-                'Work Item Type': 'Task',
-                'Title 5': taskName,
+                'Work Item Type'    : 'Task',
+                'Title 5'           : taskName,
                 'Original Estimate' : estimates()[taskType][taskName][complexity], #add estimates
-                'Type of Work': taskType,
-                'Title 1':epic,
-                'Title 2':feature
+                'Type of Work'      : taskType,
+                'Title 1'           : epic,
+                'Title 2'           : feature,
+                'Title 3'           : story
                 }    
             rowsList.append(tempDict)
         
         return rowsList
     
     #calls addRowsPerTaskType if a complextiy is defined for the proposed solution
-    def addTaskTYpes(rowList, rowSeries, epic, feature):
+    def addTaskTYpes(rowList, rowSeries, epic, feature, story):
         
         for taskTypeName in taskTypesDictionary.values():
             requirementComplexity = rowSeries[taskTypeName]
             print(requirementComplexity)
             if (requirementComplexity != '' and requirementComplexity in complexities.values()):        
-                rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity, epic = epic, feature = feature)
+                rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity, epic = epic, feature = feature, story = story)
         return rowList        
         
     #sets to group user stories under features and features under epics  
@@ -305,15 +308,15 @@ def processSheet(df, sheetName):
                 rows_list.append(tempDict)
                 processedFeatures.add(title2)
             
-            #now that the epic and feature are created, clean up titles for them
-            #row['Title 1'] = ''
-            #row['Title 2'] = ''
-            #add the requirement as story
+            #add the requirement as story  
+            row['Title 1'] = title1
+            row['Title 2'] = title2
+                      
             rows_list.append(row.to_dict())        
             #add level4 and level 5 work items
-            rows_list = addTaskTYpes(rows_list, row, title1, title2)  
+            rows_list = addTaskTYpes(rows_list, row, title1, title2, row['Title 3'])  
             #add tasks common to every story at level 4
-            rows_list = addCommonTasks(rows_list, title1, title2)
+            rows_list = addCommonTasks(rows_list, title1, title2, row['Title 3'])
             
     #dump the accumuated list to a dataframe            
     df2 = pa.DataFrame(rows_list)    
@@ -324,22 +327,38 @@ def processSheet(df, sheetName):
     #remove complexity columns
     for taskTypeColumn in taskTypesDictionary.values():
         del df2[taskTypeColumn]
-        
+    
+    #Sum estimates by feature
+    storySumUp = df2.groupby(['Title 3'])['Original Estimate'].sum()
     featureSumUp = df2.groupby(['Title 2'])['Original Estimate'].sum()
     epicSumUp = df2.groupby(['Title 1'])['Original Estimate'].sum()
-    
-    df[df.my_channel > 20000].my_channel = 0
-    
+
+    #cleanup 
+    df2.loc[df2['Work Item Type'] != 'Epic', 'Title 1'] = ''
+    df2.loc[df2['Work Item Type'] != 'Feature', 'Title 2'] = ''
+    df2.loc[df2['Work Item Type'] != 'User Story', 'Title 3'] = ''
+   
+    for rowIndex,row in df2.iterrows():
+        effort = 0
+        if (row['Work Item Type'] == 'Epic' and epicSumUp[row['Title 1']]):
+            effort = epicSumUp[row['Title 1']]
+        if (row['Work Item Type'] == 'Feature' and featureSumUp[row['Title 2']] != 0):
+            effort = featureSumUp[row['Title 2']]
+        if (row['Work Item Type'] == 'User Story' and storySumUp[row['Title 3']] != 0):
+            effort = storySumUp[row['Title 3']]
+            
+        df2.at[rowIndex, 'Effort'] = effort
+        
     #copy dataframe to a new new dataframe with columns arranged in proper order
     df3 = df2[['Work Item Type','Type of Work','Title 1','Title 2', 'Title 3',
-               'Title 4', 'Title 5','Complexity', 'Original Estimate', 'Domain', 'Prio',
+               'Title 4', 'Title 5','Complexity', 'Original Estimate', 'Effort', 'Domain', 'Prio',
                'Description', 'Detailed description', 'Proposed Solution',
                'Solution Mapping', 'Requested by', 'Fit/Gap']]        
     
     #print for UI feedback
-    print ('creating output file:'+ 'C:\temp\forUpload-'+sheetName+'.csv')
+    print ('creating output file:'+ 'D:\temp\forUpload-'+sheetName+'.csv')
     #create csv from dataframe, skip index column
-    df3.to_csv(r'C:\temp\forUpload - '+sheetName+'.csv', index=False)
+    df3.to_csv(r'D:\temp\forUpload - '+sheetName+'.csv', index=False)
                     
 #driver code
 #read all sheets in excel
