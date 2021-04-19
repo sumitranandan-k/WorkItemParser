@@ -14,6 +14,44 @@ Created on Fri Apr 16 19:11:07 2021
 """
 
 import pandas as pa
+import tkinter as tkr
+from tkinter import *
+from tkinter import filedialog
+
+def browseFiles():
+    filetypes = (
+        ('Excel files', '*.xlsx'),
+        ('All files', '*.*')
+    )   
+    
+    # Create the root window
+    window = Tk()
+      
+    # Set window title
+    window.title('File Explorer')
+      
+    # Set window size
+    window.geometry("500x500")
+      
+    #Set window background color
+    window.config(background = "white")
+      
+    # # Create a File Explorer label
+    # label_file_explorer = Label(window,
+    #                             text = "Choose the requirements file",
+    #                             width = 100, height = 4,
+    #                             fg = "blue")
+      
+ 
+    # button_explore = Button(window,
+    #                         text = "Browse Files",
+    #                         command = browseFiles)
+                             
+    selectedFile = filedialog.askopenfilename(initialdir = r'c:\temp', filetypes = filetypes, title = 'Select a file')
+    window.withdraw()
+    
+    return selectedFile
+   
 
     
 complexities = ['VS - Very Simple', 'S - Simple', 'M - Medium', 'C - Complex', 'VC - Very Complex']
@@ -209,11 +247,10 @@ def processSheet(df, sheetName):
     # df2.to_csv(r'C:\temp\result.csv', index=False)
     print ('creating output file:'+ 'C:\temp\forUpload-'+sheetName+'.csv')
     df3.to_csv(r'C:\temp\forUpload-'+sheetName+'.csv', index=False)
-
-
-# Read excel sheet
-#skiprows = 7,header = 2
-all_dfs = pa.read_excel (r'c:\temp\CP DevOps upload -test1.xlsx', sheet_name=None)
+                    
+                     
+# all_dfs = pa.read_excel (r'c:\temp\CP DevOps upload -test1.xlsx', sheet_name=None)
+all_dfs = pa.read_excel (browseFiles(), sheet_name=None)
 
 for key in all_dfs.keys():
     processSheet(all_dfs.get(key), key)
