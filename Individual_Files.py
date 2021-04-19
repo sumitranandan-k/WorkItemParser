@@ -15,8 +15,171 @@ Created on Fri Apr 16 19:11:07 2021
 
 import pandas as pa
 import tkinter as tkr
-from tkinter import *
 from tkinter import filedialog
+
+
+    
+
+
+taskTypesDictionary = {
+                 'ax_config'    :'F&O Config',
+                 'ax_dev'       :'F&O Development',
+                 'ce_config'    :'CE Config',
+                 'ce_dev'       :'CE Development',
+                 'pp_config'    :'PowerPlatform Config',
+                 'pp_dev'       :'Power Platform Development',
+                 'int_config'   :'Integration - Config (Internal)',
+                 'int_inbound'  :'Integration - Inbound ( DEV / EXTERNAL)',
+                 'int_outbound' :'Integration - Outbound ( DEV / EXTERNAL)'
+                }
+
+tasksDict = {
+             'Config'   :'Configuration',
+             'FDD'      :'Functional Design',
+             'TDD'      :'Technical Design',
+             'Dev'      : 'Build & Unit Test',
+             'FTest'    : 'Functional Test',
+             'Rework'   : 'Manage & perform fixes',
+             'Release'  : 'Release to VT environment'
+            }
+
+configTasksList = [tasksDict.get('Config')]
+devTasksList    = [tasksDict.get('FDD'),tasksDict.get('TDD'),tasksDict.get('Dev'),tasksDict.get('FTest'),tasksDict.get('Rework'),tasksDict.get('Release')]
+
+# tasksByType = { 'ConfigOnly': []
+                # }
+commonTaskList = ['Process test', 'QRC - Quick Reference Cards', 'Training', 'Demo / Acceptance test', 'Key user training']
+    
+complexities = {
+                'VS'    :'VS - Very Simple',
+                'S'     :'S - Simple',
+                'M'     :'M - Medium',
+                'C'     :'C - Complex',
+                'VC'    :'VC - Very Complex'
+                }
+
+def taskTypesDict():
+    tempDict =  {
+                 taskTypesDictionary.get('ax_config')     :configTasksList,
+                 taskTypesDictionary.get('ax_dev')        :devTasksList,
+                 taskTypesDictionary.get('ce_config')     :configTasksList,
+                 taskTypesDictionary.get('ce_dev')        :devTasksList,
+                 taskTypesDictionary.get('pp_config')     :configTasksList,
+                 taskTypesDictionary.get('pp_dev')        :devTasksList,
+                 taskTypesDictionary.get('int_config')    :configTasksList,
+                 taskTypesDictionary.get('int_inbound')   :devTasksList,
+                 taskTypesDictionary.get('int_outbound')  :devTasksList
+                 }
+    return tempDict
+
+#percentage of dev estimate for a given task
+def parameters():
+    return {
+            'customization':{
+                    tasksDict('FDD'):70,
+                    tasksDict('TDD'):40,                        
+                    tasksDict('FTest'):70,
+                    tasksDict('Rework'):11,
+                    tasksDict('Release'):0
+                    },
+            'inbound':{
+                    tasksDict('FDD'):30,
+                    tasksDict('TDD'):60,                        
+                    tasksDict('FTest'):90,
+                    tasksDict('Rework'):19,
+                    tasksDict('Release'):0
+                    },                     
+            'outbound':{
+                    tasksDict('FDD'):30,
+                    tasksDict('TDD'):60,                        
+                    tasksDict('FTest'):90,
+                    tasksDict('Rework'):19,
+                    tasksDict('Release'):0
+                    }
+            }
+
+def config_dev():
+    tempDict = {
+                complexities.get('VS')  :0,
+                complexities.get('S')   :0,
+                complexities.get('M')   :0,
+                complexities.get('C')   :0,
+                complexities.get('VC')  :0,
+                }    
+    return tempDict
+
+def customization_dev():
+    tempDict = {
+                complexities.get('VS')  :4,
+                complexities.get('S')   :9,
+                complexities.get('M')   :14,
+                complexities.get('C')   :32,
+                complexities.get('VC')  :60,
+                }    
+    return tempDict
+
+def inbound_dev():
+    tempDict = {
+                complexities.get('VS')  :16,
+                complexities.get('S')   :24,
+                complexities.get('M')   :40,
+                complexities.get('C')   :80,
+                complexities.get('VC')  :120,
+                }    
+    return tempDict
+
+def outbound_dev():
+    tempDict = {
+                complexities.get('VS')  :8,
+                complexities.get('S')   :16,
+                complexities.get('M')   :24,
+                complexities.get('C')   :40,
+                complexities.get('VC')  :60,
+                }    
+    return tempDict
+
+def estimateParameters():
+    return {
+            'configuration' : config_dev(),
+            'customization' :customization_dev(),
+            'inbound'       :inbound_dev(),                     
+            'outbound'      :outbound_dev()
+            }
+
+    
+def calcDevEstimates(taskName, parameter, devEstimates):
+    return {
+                complexities.get('VS')  :(devEstimates.get('VS')*parameter[taskName])/100,
+                complexities.get('S')   :(devEstimates.get('S')*parameter[taskName])/100,
+                complexities.get('M')   :(devEstimates.get('M')*parameter[taskName])/100,
+                complexities.get('C')   :(devEstimates.get('C')*parameter[taskName])/100,
+                complexities.get('VC')  :(devEstimates.get('VC')*parameter[taskName])/100,
+           }
+    
+
+def getEstimateByTaskType(parameter, devEstimates):
+    return {
+                tasksDict('Dev'):devEstimates,
+                tasksDict('FDD'):calcDevEstimates('FDD', parameter.get('FDD'), tasksDict('Dev')),
+                tasksDict('TDD'):calcDevEstimates('TDD', parameter.get('FDD'), tasksDict('Dev')),
+                tasksDict('FTest'):calcDevEstimates('FTest', parameter.get('FDD'), tasksDict('Dev')),
+                tasksDict('Rework'):calcDevEstimates('Rework', parameter.get('FDD'), tasksDict('Dev')),
+                tasksDict('Release'):calcDevEstimates('Release', parameter.get('FDD'), tasksDict('Dev'))
+            }
+
+def estimates():
+    tempDict =  {
+                    taskTypesDictionary.get('ax_config')      :{tasksDict.get('Config'):estimateParameters()['configuration']},
+                    taskTypesDictionary.get('int_config')     :{tasksDict.get('Config'):estimateParameters()['configuration']},
+                    taskTypesDictionary.get('ce_config')      :{tasksDict.get('Config'):estimateParameters()['configuration']},           
+                    taskTypesDictionary.get('pp_config')      :{tasksDict.get('Config'):estimateParameters()['configuration']},            
+                    taskTypesDictionary.get('ax_dev')         :getEstimateByTaskType(parameters().get('customization'), estimateParameters()['customization']),                                                                            
+                    taskTypesDictionary.get('ce_dev')         :getEstimateByTaskType(parameters().get('customization'), estimateParameters()['customization']),                                                                    
+                    taskTypesDictionary.get('pp_dev')         :getEstimateByTaskType(parameters().get('customization'), estimateParameters()['customization']),                                             
+                    taskTypesDictionary.get('int_inbound')    :getEstimateByTaskType(parameters().get('inbound'), estimateParameters()['inbound']),                                             
+                    taskTypesDictionary.get('int_outbound')   :getEstimateByTaskType(parameters().get('outbound'), estimateParameters()['outbound'])                            
+                }
+    return tempDict
 
 def browseFiles():
     filetypes = (
@@ -25,7 +188,7 @@ def browseFiles():
     )   
     
     # Create the root window
-    window = Tk()
+    window = tkr.Tk()
       
     # Set window title
     window.title('File Explorer')
@@ -51,81 +214,7 @@ def browseFiles():
     window.withdraw()
     
     return selectedFile
-   
 
-    
-complexities = ['VS - Very Simple', 'S - Simple', 'M - Medium', 'C - Complex', 'VC - Very Complex']
-
-estimates = {'F&O Config':{'Configuration':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}},
-            'F&O Development':{
-                                'Functional Design':{'VS - Very Simple':2.8,'S - Simple':6.3, 'M - Medium':9.8,'C - Complex':22.4, 'VC - Very Complex':42},
-                                'Technical Design':{'VS - Very Simple':1.6,'S - Simple':3.6, 'M - Medium':5.6,'C - Complex':12.8, 'VC - Very Complex':24},
-                                'Build & Unit Test':{'VS - Very Simple':4,'S - Simple':9, 'M - Medium':14,'C - Complex':32, 'VC - Very Complex':60},
-                                'Functional Test':{'VS - Very Simple':2.8,'S - Simple':6.3, 'M - Medium':9.8,'C - Complex':22.4, 'VC - Very Complex':42},
-                                'Manage & perform fixes':{'VS - Very Simple':0.44,'S - Simple':0.99, 'M - Medium':1.54,'C - Complex':3.52, 'VC - Very Complex':6.6},
-                                'Release to VT environment':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}
-                                },
-            'CE Config':{'Configuration':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}},            
-            'PowerPlatform Config':{'Configuration':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}},
-            'CE Development':{
-                                'Functional Design':{'VS - Very Simple':2.8,'S - Simple':6.3, 'M - Medium':9.8,'C - Complex':22.4, 'VC - Very Complex':42},
-                                'Technical Design':{'VS - Very Simple':1.6,'S - Simple':3.6, 'M - Medium':5.6,'C - Complex':12.8, 'VC - Very Complex':24},
-                                'Build & Unit Test':{'VS - Very Simple':4,'S - Simple':9, 'M - Medium':14,'C - Complex':32, 'VC - Very Complex':60},
-                                'Functional Test':{'VS - Very Simple':2.8,'S - Simple':6.3, 'M - Medium':9.8,'C - Complex':22.4, 'VC - Very Complex':42},
-                                'Manage & perform fixes':{'VS - Very Simple':0.44,'S - Simple':0.99, 'M - Medium':1.54,'C - Complex':3.52, 'VC - Very Complex':6.6},
-                                'Release to VT environment':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}
-                                },
-            'Power Platform Development':{
-                                'Functional Design':{'VS - Very Simple':2.8,'S - Simple':6.3, 'M - Medium':9.8,'C - Complex':22.4, 'VC - Very Complex':42},
-                                'Technical Design':{'VS - Very Simple':1.6,'S - Simple':3.6, 'M - Medium':5.6,'C - Complex':12.8, 'VC - Very Complex':24},
-                                'Build & Unit Test':{'VS - Very Simple':4,'S - Simple':9, 'M - Medium':14,'C - Complex':32, 'VC - Very Complex':60},
-                                'Functional Test':{'VS - Very Simple':2.8,'S - Simple':6.3, 'M - Medium':9.8,'C - Complex':22.4, 'VC - Very Complex':42},
-                                'Manage & perform fixes':{'VS - Very Simple':0.44,'S - Simple':0.99, 'M - Medium':1.54,'C - Complex':3.52, 'VC - Very Complex':6.6},
-                                'Release to VT environment':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}
-                                },
-            'Integration - Config (Internal)':{'Configuration':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}},            
-            'Integration - Inbound ( DEV / EXTERNAL)':{
-                                'Functional Design':{'VS - Very Simple':4.8,'S - Simple':7.2, 'M - Medium':12,'C - Complex':24, 'VC - Very Complex':36},
-                                'Technical Design':{'VS - Very Simple':9.6,'S - Simple':14.4, 'M - Medium':24,'C - Complex':48, 'VC - Very Complex':72},
-                                'Build & Unit Test':{'VS - Very Simple':16,'S - Simple':24, 'M - Medium':40,'C - Complex':80, 'VC - Very Complex':120},
-                                'Functional Test':{'VS - Very Simple':14.4,'S - Simple':21.6, 'M - Medium':36,'C - Complex':72, 'VC - Very Complex':108},
-                                'Manage & perform fixes':{'VS - Very Simple':3.04,'S - Simple':4.56, 'M - Medium':7.6,'C - Complex':15.2, 'VC - Very Complex':22.8},
-                                'Release to VT environment':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}
-                                },
-            'Integration - Outbound ( DEV / EXTERNAL)':{
-                                'Functional Design':{'VS - Very Simple':2.4,'S - Simple':4.8, 'M - Medium':7.2,'C - Complex':12, 'VC - Very Complex':18},
-                                'Technical Design':{'VS - Very Simple':4.8,'S - Simple':9.6, 'M - Medium':14.4,'C - Complex':24, 'VC - Very Complex':36},
-                                'Build & Unit Test':{'VS - Very Simple':8,'S - Simple':16, 'M - Medium':24,'C - Complex':40, 'VC - Very Complex':60},
-                                'Functional Test':{'VS - Very Simple':7.2,'S - Simple':14.4, 'M - Medium':21.6,'C - Complex':36, 'VC - Very Complex':54},
-                                'Manage & perform fixes':{'VS - Very Simple':1.52,'S - Simple':3.04, 'M - Medium':4.56,'C - Complex':7.6, 'VC - Very Complex':11.4},
-                                'Release to VT environment':{'VS - Very Simple':0,'S - Simple':0, 'M - Medium':0,'C - Complex':0, 'VC - Very Complex':0}
-                                },   
-            }
-
-taskTypesList = ['F&O Config',
-                 'F&O Development',
-                 'CE Config',
-                 'CE Development',
-                 'PowerPlatform Config',
-                 'Power Platform Development',
-                 'Integration - Config (Internal)',
-                 'Integration - Inbound ( DEV / EXTERNAL)',
-                 'Integration - Outbound ( DEV / EXTERNAL)']
-
-
-dictTaskTypes = {'F&O Config':['Configuration'],
-                 'F&O Development':['Functional Design', 'Technical Design', 'Build & Unit Test', 'Functional Test', 'Manage & perform fixes', 'Release to VT environment'],
-                 'CE Config':['Configuration'],
-                 'CE Development':['Build & Unit Test', 'Functional Design', 'Technical Design', 'Functional Test', 'Manage & perform fixes', 'Release to VT environment'],
-                 'PowerPlatform Config':['Configuration'],
-                 'Power Platform Development':['Functional Design', 'Technical Design', 'Build & Unit Test', 'Functional Test', 'Manage & perform fixes', 'Release to VT environment'],
-                 'Integration - Config (Internal)':['Configuration'],
-                 'Integration - Inbound ( DEV / EXTERNAL)':['Functional Design', 'Technical Design', 'Build & Unit Test', 'Functional Test', 'Manage & perform fixes', 'Release to VT environment'],
-                 'Integration - Outbound ( DEV / EXTERNAL)':['Functional Design', 'Technical Design', 'Build & Unit Test', 'Functional Test', 'Manage & perform fixes', 'Release to VT environment']
-                 }
-
-commonTaskList = ['Process test', 'QRC - Quick Reference Cards', 'Training', 'Demo / Acceptance test', 'Key user training']
-    
 def processSheet(df, sheetName):
     rows_list = []
     # df = pa.read_excel (r'c:\temp\Copy of CP DevOps Requriements upload.xlsx', sheet_name=sheetName)
@@ -162,7 +251,7 @@ def processSheet(df, sheetName):
     def addRowsPerTaskType(rowsList, taskType, complexity):
             
         
-        listOfTasks = dictTaskTypes.get(taskType)
+        listOfTasks = taskTypesDict().get(taskType)
         
         tempDict = {
             'Work Item Type': 'TaskType',
@@ -177,7 +266,7 @@ def processSheet(df, sheetName):
             tempDict = {
                 'Work Item Type': 'Task',
                 'Title 5': taskName,
-                'Original Estimate' : estimates[taskType][taskName][complexity],
+                'Original Estimate' : estimates()[taskType][taskName][complexity],
                 'Type of Work': taskType
                 }    
             rowsList.append(tempDict)
@@ -186,10 +275,10 @@ def processSheet(df, sheetName):
     
     def addTaskTYpes(rowList, rowSeries):
         
-        for taskTypeName in taskTypesList:
+        for taskTypeName in taskTypesDictionary.values():
             requirementComplexity = rowSeries[taskTypeName]
             print(requirementComplexity)
-            if (requirementComplexity != '' and requirementComplexity in complexities):        
+            if (requirementComplexity != '' and requirementComplexity in complexities.values()):        
                 rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity)
         return rowList        
         
@@ -232,7 +321,7 @@ def processSheet(df, sheetName):
     df2 = pa.DataFrame(rows_list)    
     df2.fillna('', inplace = True)
         
-    for taskTypeColumn in taskTypesList:
+    for taskTypeColumn in tasksDict.values():
         del df2[taskTypeColumn]
     
     #TODO1: can we loop all sheets in excel? -done
