@@ -1,37 +1,19 @@
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 16 11:36:06 2021
-
-@author: sumit.kamarajugadda
-"""
-
-
-# -*- coding: utf-8 -*-
-"""
-Created on Fri Apr 16 19:11:07 2021
-
-@author: Sumit
-"""
-
 import pandas as pa
 import tkinter as tkr
 from tkinter import filedialog
 
-
-    
-
-
+#Constants
 taskTypesDictionary = {
-                 'ax_config'    :'F&O Config',
-                 'ax_dev'       :'F&O Development',
-                 'ce_config'    :'CE Config',
-                 'ce_dev'       :'CE Development',
-                 'pp_config'    :'PowerPlatform Config',
-                 'pp_dev'       :'Power Platform Development',
-                 'int_config'   :'Integration - Config (Internal)',
-                 'int_inbound'  :'Integration - Inbound ( DEV / EXTERNAL)',
-                 'int_outbound' :'Integration - Outbound ( DEV / EXTERNAL)'
-                }
+                         'ax_config'    :'F&O Config',
+                         'ax_dev'       :'F&O Development',
+                         'ce_config'    :'CE Config',
+                         'ce_dev'       :'CE Development',
+                         'pp_config'    :'PowerPlatform Config',
+                         'pp_dev'       :'Power Platform Development',
+                         'int_config'   :'Integration - Config (Internal)',
+                         'int_inbound'  :'Integration - Inbound ( DEV / EXTERNAL)',
+                         'int_outbound' :'Integration - Outbound ( DEV / EXTERNAL)'
+                      }
 
 tasksDict = {
              'Config'   :'Configuration',
@@ -43,11 +25,6 @@ tasksDict = {
              'Release'  : 'Release to VT environment'
             }
 
-configTasksList = [tasksDict.get('Config')]
-devTasksList    = [tasksDict.get('FDD'),tasksDict.get('TDD'),tasksDict.get('Dev'),tasksDict.get('FTest'),tasksDict.get('Rework'),tasksDict.get('Release')]
-
-# tasksByType = { 'ConfigOnly': []
-                # }
 commonTaskList = ['Process test', 'QRC - Quick Reference Cards', 'Training', 'Demo / Acceptance test', 'Key user training']
     
 complexities = {
@@ -56,8 +33,13 @@ complexities = {
                 'M'     :'M - Medium',
                 'C'     :'C - Complex',
                 'VC'    :'VC - Very Complex'
-                }
+               }
 
+#Combinations derived from constants
+configTasksList = [tasksDict.get('Config')]
+devTasksList    = [tasksDict.get('FDD'),tasksDict.get('TDD'),tasksDict.get('Dev'),tasksDict.get('FTest'),tasksDict.get('Rework'),tasksDict.get('Release')]
+
+#creates a dictionary of tasks types per proposed solution
 def taskTypesDict():
     tempDict =  {
                  taskTypesDictionary.get('ax_config')     :configTasksList,
@@ -72,33 +54,35 @@ def taskTypesDict():
                  }
     return tempDict
 
-#percentage of dev estimate for a given task
+#percentage of dev estimate to calculate estimates of other types of work
+#read it as for inbound integrations TDD is 60% of dev estimate
 def parameters():
     tempDict =  {
             'customization':{
-                    tasksDict['FDD']:70,
-                    tasksDict['TDD']:40,                        
-                    tasksDict['FTest']:70,
-                    tasksDict['Rework']:11,
+                    tasksDict['FDD']    :70,
+                    tasksDict['TDD']    :40,                        
+                    tasksDict['FTest']  :70,
+                    tasksDict['Rework'] :11,
                     tasksDict['Release']:0
                     },
             'inbound':{
-                    tasksDict['FDD']:30,
-                    tasksDict['TDD']:60,                        
-                    tasksDict['FTest']:90,
-                    tasksDict['Rework']:19,
+                    tasksDict['FDD']    :30,
+                    tasksDict['TDD']    :60,                        
+                    tasksDict['FTest']  :90,
+                    tasksDict['Rework'] :19,
                     tasksDict['Release']:0
                     },                     
             'outbound':{
-                    tasksDict['FDD']:30,
-                    tasksDict['TDD']:60,                        
-                    tasksDict['FTest']:90,
-                    tasksDict['Rework']:19,
+                    tasksDict['FDD']    :30,
+                    tasksDict['TDD']    :60,                        
+                    tasksDict['FTest']  :90,
+                    tasksDict['Rework'] :19,
                     tasksDict['Release']:0
                     }
             }
     return tempDict;
 
+#estimates for configuration
 def config_dev():
     tempDict = {
                 complexities.get('VS')  :0,
@@ -109,6 +93,7 @@ def config_dev():
                 }    
     return tempDict
 
+#estimates for customization
 def customization_dev():
     tempDict = {
                 complexities.get('VS')  :4,
@@ -119,6 +104,7 @@ def customization_dev():
                 }    
     return tempDict
 
+#estimates for inbound integration
 def inbound_dev():
     tempDict = {
                 complexities.get('VS')  :16,
@@ -129,6 +115,7 @@ def inbound_dev():
                 }    
     return tempDict
 
+#estimates for outbound integration
 def outbound_dev():
     tempDict = {
                 complexities.get('VS')  :8,
@@ -136,19 +123,20 @@ def outbound_dev():
                 complexities.get('M')   :24,
                 complexities.get('C')   :40,
                 complexities.get('VC')  :60,
-                }    
+               }    
     return tempDict
 
+#wraps the estimates in a dictionary with values of each type of work <key>:<value> = <type of work>:<dictionary of default estimated for the type of work>
 def estimateParameters():
     tempDict = {
-            'configuration' : config_dev(),
-            'customization' :customization_dev(),
-            'inbound'       :inbound_dev(),                     
-            'outbound'      :outbound_dev()
-            }
+                'configuration' : config_dev(),
+                'customization' : customization_dev(),
+                'inbound'       : inbound_dev(),                     
+                'outbound'      : outbound_dev()
+               }
     return tempDict
 
-    
+#calclate related work and wrap it in a dictionary based on complexity    
 def calcDevEstimates(percent, devEstimates):
     tempDict = {
                 complexities.get('VS')  :(devEstimates.get(complexities.get('VS'))*percent)/100,
@@ -159,17 +147,19 @@ def calcDevEstimates(percent, devEstimates):
                }
     return tempDict
 
+#wraps calculated estimates by task type
 def getEstimateByTaskType(parameter, devEstimates):
     tempDict = {
-                tasksDict['Dev']:devEstimates,
-                tasksDict['FDD']:calcDevEstimates(parameter.get(tasksDict['FDD']), devEstimates),
-                tasksDict['TDD']:calcDevEstimates(parameter.get(tasksDict['TDD']), devEstimates),
-                tasksDict['FTest']:calcDevEstimates(parameter.get(tasksDict['FTest']), devEstimates),
-                tasksDict['Rework']:calcDevEstimates(parameter.get(tasksDict['Rework']), devEstimates),
-                tasksDict['Release']:calcDevEstimates(parameter.get(tasksDict['Release']), devEstimates)
-            }
+                    tasksDict['Dev']:devEstimates,
+                    tasksDict['FDD']:calcDevEstimates(parameter.get(tasksDict['FDD']), devEstimates),
+                    tasksDict['TDD']:calcDevEstimates(parameter.get(tasksDict['TDD']), devEstimates),
+                    tasksDict['FTest']:calcDevEstimates(parameter.get(tasksDict['FTest']), devEstimates),
+                    tasksDict['Rework']:calcDevEstimates(parameter.get(tasksDict['Rework']), devEstimates),
+                    tasksDict['Release']:calcDevEstimates(parameter.get(tasksDict['Release']), devEstimates)
+               }
     return tempDict
 
+#wraps estimates per task type by technology used
 def estimates():
     tempDict =  {
                     taskTypesDictionary.get('ax_config')      :{tasksDict.get('Config'):estimateParameters()['configuration']},
@@ -184,6 +174,7 @@ def estimates():
                 }
     return tempDict
 
+#opens file picker dialog to choose the file to process
 def browseFiles():
     filetypes = (
         ('Excel files', '*.xlsx'),
@@ -201,65 +192,70 @@ def browseFiles():
       
     #Set window background color
     window.config(background = "white")
-      
-    # # Create a File Explorer label
-    # label_file_explorer = Label(window,
-    #                             text = "Choose the requirements file",
-    #                             width = 100, height = 4,
-    #                             fg = "blue")
-      
- 
-    # button_explore = Button(window,
-    #                         text = "Browse Files",
-    #                         command = browseFiles)
-                             
-    selectedFile = filedialog.askopenfilename(initialdir = r'c:\temp', filetypes = filetypes, title = 'Select a file')
+    
+    #open the dialog and capture selection
+    selectedFile = filedialog.askopenfilename(initialdir = r'D:\temp', filetypes = filetypes, title = 'Select a file')
+    #close file picker
     window.withdraw()
     
     return selectedFile
 
 def processSheet(df, sheetName):
+    #Initialize blank row list, this will hold the result set for the sheet before writing into dataframe
     rows_list = []
-    # df = pa.read_excel (r'c:\temp\Copy of CP DevOps Requriements upload.xlsx', sheet_name=sheetName)
-      
+    
+    #feedback - user for troubleshooting      
     print(sheetName)
     
+    #Create epic and feature names based on process reference
     df['Title 1'] = df['Process reference'].str.slice(0,7)
     df['Title 2'] = df['Process reference'].str.slice(0,11)
     df['Title 3'] = df['Requirement ID']+'-'+df['Process reference']+'-'+df['Title']
     df['Work Item Type'] = 'User Story'
+    #add empty columns for taskType and task names
     df['Title 4'] = ''
     df['Title 5'] = ''
+    
+    df['colFromIndex'] = df.index
+    df.sort_values(by=['Title 1','Title 2', 'colFromIndex'], ignore_index = True)
+    df.reset_index(drop=True)
        
+    #remove the columns as we do not need them anymore
     del df['Requirement ID']
     del df['Process reference']
     del df['Title']
 
+    #replace nulls with empty strings
     df.fillna('', inplace = True)
 
-    
-    def addCommonTasks(rowsList):
+    #adds task that are common to every feature
+    def addCommonTasks(rowsList,  epic, feature, story):
         for taskName in commonTaskList:
             tempDict = {
-                'Work Item Type': 'Task',
-                'Title 4': taskName,
+                'Work Item Type'    : 'Task',
+                'Title 4'           : taskName,
                 'Original Estimate' : 0,
-                'Type of Work': 'Misc'
+                'Type of Work'      : 'Misc',
+                'Title 1'           : epic,
+                'Title 2'           : feature,
+                'Title 3'           : story
                 }    
             rowsList.append(tempDict)
             
         return rowsList
             
-    
-    def addRowsPerTaskType(rowsList, taskType, complexity):
-            
-        
+    #adds task type per complexity and corresponding tasks with estimates
+    def addRowsPerTaskType(rowsList, taskType, complexity,  epic, feature, story):
         listOfTasks = taskTypesDict().get(taskType)
         
+        #add tasktype 
         tempDict = {
-            'Work Item Type': 'TaskType',
-            'Title 4': taskType,
-            'Complexity': complexity        
+            'Work Item Type'    : 'TaskType',
+            'Title 4'           : taskType,
+            'Complexity'        : complexity,
+            'Title 1'           : epic,
+            'Title 2'           : feature,
+            'Title 3'           : story             
             }    
         rowsList.append(tempDict)
           
@@ -267,31 +263,33 @@ def processSheet(df, sheetName):
         for taskName in listOfTasks:
             print (taskType + '-' + taskName + '-' + complexity)
             tempDict = {
-                'Work Item Type': 'Task',
-                'Title 5': taskName,
-                'Original Estimate' : estimates()[taskType][taskName][complexity],
-                'Type of Work': taskType
+                'Work Item Type'    : 'Task',
+                'Title 5'           : taskName,
+                'Original Estimate' : estimates()[taskType][taskName][complexity], #add estimates
+                'Type of Work'      : taskType,
+                'Title 1'           : epic,
+                'Title 2'           : feature,
+                'Title 3'           : story
                 }    
             rowsList.append(tempDict)
         
         return rowsList
     
-    def addTaskTYpes(rowList, rowSeries):
+    #calls addRowsPerTaskType if a complextiy is defined for the proposed solution
+    def addTaskTYpes(rowList, rowSeries, epic, feature, story):
         
         for taskTypeName in taskTypesDictionary.values():
             requirementComplexity = rowSeries[taskTypeName]
             print(requirementComplexity)
             if (requirementComplexity != '' and requirementComplexity in complexities.values()):        
-                rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity)
+                rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity, epic = epic, feature = feature, story = story)
         return rowList        
         
+    #sets to group user stories under features and features under epics  
     processedEpics = set()
     processedFeatures = set()
-    
-    df2 = pa.DataFrame(data=None, columns=df.columns)
-    
-    # print (df)
-   
+
+    #for each row in requirements add a epic and feature if new, else nest under existing ones
     for rowIndex,row in df.iterrows():
         print(rowIndex)
         if row['Work Item Type'] == 'User Story':           
@@ -314,35 +312,66 @@ def processSheet(df, sheetName):
                 rows_list.append(tempDict)
                 processedFeatures.add(title2)
             
-            row['Title 1'] = ''
-            row['Title 2'] = ''
+            #add the requirement as story  
+            row['Title 1'] = title1
+            row['Title 2'] = title2
+                      
             rows_list.append(row.to_dict())        
-            rows_list = addTaskTYpes(rows_list, row)  
-            rows_list = addCommonTasks(rows_list)
+            #add level4 and level 5 work items
+            rows_list = addTaskTYpes(rows_list, row, title1, title2, row['Title 3'])  
+            #add tasks common to every story at level 4
+            rows_list = addCommonTasks(rows_list, title1, title2, row['Title 3'])
             
-            
+    #dump the accumuated list to a dataframe            
     df2 = pa.DataFrame(rows_list)    
+    #clean up nulls, replace with empty string
+    df2['Original Estimate'].fillna(0, inplace=True)
     df2.fillna('', inplace = True)
         
+    #remove complexity columns
     for taskTypeColumn in taskTypesDictionary.values():
         del df2[taskTypeColumn]
     
-    #TODO1: can we loop all sheets in excel? -done
-    #TODO2: can we Sum up original estimate? 
-    #TODO3: can we split the dataframe into max rows less than 999 but at epic level?
-    
-    df3 = df2[['Work Item Type','Type of Work','Title 1','Title 2', 'Title 3',
-               'Title 4', 'Title 5','Complexity', 'Original Estimate', 'Domain', 'Prio',
-               'Description', 'Detailed description', 'Proposed Solution',
-               'Solution Mapping', 'Requested by', 'Fit/Gap']]
+    #Sum estimates by feature
+    storySumUp = df2.groupby(['Title 3'])['Original Estimate'].sum()
+    featureSumUp = df2.groupby(['Title 2'])['Original Estimate'].sum()
+    epicSumUp = df2.groupby(['Title 1'])['Original Estimate'].sum()
+
+    # df2['colFromIndex'] = df2.index
+    # df2.sort_values(by=['Title 1','Title 2', 'colFromIndex'])
+    # df2.reset_index(drop=True)
+
+    #cleanup 
+    df2.loc[df2['Work Item Type'] != 'Epic', 'Title 1'] = ''
+    df2.loc[df2['Work Item Type'] != 'Feature', 'Title 2'] = ''
+    df2.loc[df2['Work Item Type'] != 'User Story', 'Title 3'] = ''
+   
+    for rowIndex,row in df2.iterrows():
+        effort = 0
+        if (row['Work Item Type'] == 'Epic' and epicSumUp[row['Title 1']]):
+            effort = epicSumUp[row['Title 1']]
+        if (row['Work Item Type'] == 'Feature' and featureSumUp[row['Title 2']] != 0):
+            effort = featureSumUp[row['Title 2']]
+        if (row['Work Item Type'] == 'User Story' and storySumUp[row['Title 3']] != 0):
+            effort = storySumUp[row['Title 3']]
+            
+        df2.at[rowIndex, 'Effort'] = effort
         
-    # df2.to_csv(r'C:\temp\result.csv', index=False)
-    print ('creating output file:'+ 'C:\temp\forUpload-'+sheetName+'.csv')
-    df3.to_csv(r'C:\temp\forUpload-'+sheetName+'.csv', index=False)
+    #copy dataframe to a new new dataframe with columns arranged in proper order
+    df3 = df2[['Work Item Type','Type of Work','Title 1','Title 2', 'Title 3',
+               'Title 4', 'Title 5','Complexity', 'Original Estimate', 'Effort', 'Domain', 'Prio',
+               'Description', 'Detailed description', 'Proposed Solution',
+               'Solution Mapping', 'Requested by', 'Fit/Gap']]        
+    
+    #print for UI feedback
+    print ('creating output file:'+ 'D:\temp\forUpload-'+sheetName+'.csv')
+    #create csv from dataframe, skip index column
+    df3.to_csv(r'D:\temp\forUpload - '+sheetName+'.csv', index=False)
                     
-                     
-# all_dfs = pa.read_excel (r'c:\temp\CP DevOps upload -test1.xlsx', sheet_name=None)
+#driver code
+#read all sheets in excel
 all_dfs = pa.read_excel (browseFiles(), sheet_name=None)
 
+#process each sheet in excel to generate a seperate csv file
 for key in all_dfs.keys():
     processSheet(all_dfs.get(key), key)
