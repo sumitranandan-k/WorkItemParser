@@ -233,7 +233,8 @@ def processSheet(df, sheetName):
         for taskName in commonTaskList:
             tempDict = {
                 'Work Item Type'    : 'Task',
-                'Title 4'           : taskName,
+                'Title 4'           : taskName + ' - ' + story,
+                'Title 5'           : taskName + ' - ' + story,
                 'Original Estimate' : 0,
                 'Type of Work'      : 'Misc',
                 'Title 1'           : epic,
@@ -250,8 +251,8 @@ def processSheet(df, sheetName):
         
         #add tasktype 
         tempDict = {
-            'Work Item Type'    : 'TaskType',
-            'Title 4'           : taskType,
+            'Work Item Type'    : 'Task Type',
+            'Title 4'           : taskType + ' - ' + story,
             'Complexity'        : complexity,
             'Title 1'           : epic,
             'Title 2'           : feature,
@@ -264,8 +265,8 @@ def processSheet(df, sheetName):
             print (taskType + '-' + taskName + '-' + complexity)
             tempDict = {
                 'Work Item Type'    : 'Task',
-                'Title 4'           : taskType,
-                'Title 5'           : taskName,
+                'Title 4'           : taskType  + ' - ' + story,
+                'Title 5'           : taskName + ' - ' + taskType + ' - ' + story,
                 'Original Estimate' : estimates()[taskType][taskName][complexity], #add estimates
                 'Type of Work'      : taskType,
                 'Title 1'           : epic,
@@ -333,7 +334,7 @@ def processSheet(df, sheetName):
     for taskTypeColumn in taskTypesDictionary.values():
         del df2[taskTypeColumn]
     
-    df2['TaskTypeSumUpColumn'] = df2['Title 3'] + df2['Title 4']
+    df2['TaskTypeSumUpColumn'] = df2['Title 4']
     #Sum estimates by feature
     storySumUp = df2.groupby(['Title 3'])['Original Estimate'].sum()
     featureSumUp = df2.groupby(['Title 2'])['Original Estimate'].sum()
@@ -343,8 +344,7 @@ def processSheet(df, sheetName):
     #cleanup 
     df2.loc[df2['Work Item Type'] != 'Epic', 'Title 1'] = ''
     df2.loc[df2['Work Item Type'] != 'Feature', 'Title 2'] = ''
-    df2.loc[df2['Work Item Type'] != 'User Story', 'Title 3'] = ''
-    df2.loc[df2['Work Item Type'] != 'TaskType', 'Title 4'] = ''
+    df2.loc[df2['Work Item Type'] != 'User Story', 'Title 3'] = ''    
    
     for rowIndex,row in df2.iterrows():
         effort = 0
@@ -354,8 +354,10 @@ def processSheet(df, sheetName):
             effort = featureSumUp[row['Title 2']]
         if (row['Work Item Type'] == 'User Story' and storySumUp[row['Title 3']] != 0):
             effort = storySumUp[row['Title 3']]
-        if (row['Work Item Type'] == 'TaskType' and taskTypeSumUp[row['TaskTypeSumUpColumn']] != 0):
+        if (row['Work Item Type'] == 'Task Type' and taskTypeSumUp[row['TaskTypeSumUpColumn']] != 0):
             effort = taskTypeSumUp[row['TaskTypeSumUpColumn']]
+        if (row['Work Item Type'] == 'Task' and row['Title 5'] != ''):
+            df2.at[rowIndex, 'Title 4'] = ''                        
             
         df2.at[rowIndex, 'Effort'] = effort
         
@@ -363,7 +365,7 @@ def processSheet(df, sheetName):
     df3 = df2[['Work Item Type','Type of Work','Title 1','Title 2', 'Title 3',
                'Title 4', 'Title 5','Complexity', 'Original Estimate', 'Effort', 'Domain', 'Prio',
                'Description', 'Detailed description', 'Proposed Solution',
-               'Solution Mapping', 'Requested by', 'Fit/Gap']]        
+               'Solution Mapping', 'Requested by', 'Fit or Gap']]        
     
     #print for UI feedback
     print ('creating output file:'+ 'D:\temp\forUpload-'+sheetName+'.csv')
