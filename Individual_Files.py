@@ -194,7 +194,7 @@ def browseFiles():
     window.config(background = "white")
     
     #open the dialog and capture selection
-    selectedFile = filedialog.askopenfilename(initialdir = r'D:\temp', filetypes = filetypes, title = 'Select a file')
+    selectedFile = filedialog.askopenfilename(initialdir = r'C:\temp', filetypes = filetypes, title = 'Select a file')
     #close file picker
     window.withdraw()
     
@@ -207,6 +207,9 @@ def processSheet(df, sheetName):
     #feedback - user for troubleshooting      
     print(sheetName)
     
+    
+    df.sort_values(by=['Process reference', 'Requirement ID'], ignore_index = True, inplace=True)
+        
     #Create epic and feature names based on process reference
     df['Title 1'] = df['Process reference'].str.slice(0,7)
     df['Title 2'] = df['Process reference'].str.slice(0,11)
@@ -216,10 +219,7 @@ def processSheet(df, sheetName):
     df['Title 4'] = ''
     df['Title 5'] = ''
     
-    df['colFromIndex'] = df.index
-    df.sort_values(by=['Title 1','Title 2', 'colFromIndex'], ignore_index = True)
-    df.reset_index(drop=True)
-       
+
     #remove the columns as we do not need them anymore
     del df['Requirement ID']
     del df['Process reference']
@@ -264,6 +264,7 @@ def processSheet(df, sheetName):
             print (taskType + '-' + taskName + '-' + complexity)
             tempDict = {
                 'Work Item Type'    : 'Task',
+                'Title 4'           : taskType,
                 'Title 5'           : taskName,
                 'Original Estimate' : estimates()[taskType][taskName][complexity], #add estimates
                 'Type of Work'      : taskType,
@@ -332,11 +333,13 @@ def processSheet(df, sheetName):
     for taskTypeColumn in taskTypesDictionary.values():
         del df2[taskTypeColumn]
     
+    df2['TaskTypeSumUpColumn'] = df2['Title 3'] + df2['Title 4']
     #Sum estimates by feature
     storySumUp = df2.groupby(['Title 3'])['Original Estimate'].sum()
     featureSumUp = df2.groupby(['Title 2'])['Original Estimate'].sum()
     epicSumUp = df2.groupby(['Title 1'])['Original Estimate'].sum()
-
+    taskTypeSumUp = df2.groupby(['TaskTypeSumUpColumn'])['Original Estimate'].sum()
+    
     # df2['colFromIndex'] = df2.index
     # df2.sort_values(by=['Title 1','Title 2', 'colFromIndex'])
     # df2.reset_index(drop=True)
@@ -345,6 +348,7 @@ def processSheet(df, sheetName):
     df2.loc[df2['Work Item Type'] != 'Epic', 'Title 1'] = ''
     df2.loc[df2['Work Item Type'] != 'Feature', 'Title 2'] = ''
     df2.loc[df2['Work Item Type'] != 'User Story', 'Title 3'] = ''
+    df2.loc[df2['Work Item Type'] != 'TaskType', 'Title 4'] = ''
    
     for rowIndex,row in df2.iterrows():
         effort = 0
@@ -354,6 +358,8 @@ def processSheet(df, sheetName):
             effort = featureSumUp[row['Title 2']]
         if (row['Work Item Type'] == 'User Story' and storySumUp[row['Title 3']] != 0):
             effort = storySumUp[row['Title 3']]
+        if (row['Work Item Type'] == 'TaskType' and taskTypeSumUp[row['TaskTypeSumUpColumn']] != 0):
+            effort = taskTypeSumUp[row['TaskTypeSumUpColumn']]
             
         df2.at[rowIndex, 'Effort'] = effort
         
@@ -366,7 +372,7 @@ def processSheet(df, sheetName):
     #print for UI feedback
     print ('creating output file:'+ 'D:\temp\forUpload-'+sheetName+'.csv')
     #create csv from dataframe, skip index column
-    df3.to_csv(r'D:\temp\forUpload - '+sheetName+'.csv', index=False)
+    df3.to_csv(r'C:\temp\forUpload - '+sheetName+'.csv', index=False)
                     
 #driver code
 #read all sheets in excel
