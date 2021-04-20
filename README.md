@@ -14,7 +14,7 @@
 ####	Description
 ####	Detailed description
 ####	Requested by
-####	Fit/Gap
+####	Fit or Gap
 ####	Proposed Solution
 ####	Solution Mapping
 ####	F&O Config
