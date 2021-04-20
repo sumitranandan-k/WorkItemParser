@@ -340,10 +340,6 @@ def processSheet(df, sheetName):
     epicSumUp = df2.groupby(['Title 1'])['Original Estimate'].sum()
     taskTypeSumUp = df2.groupby(['TaskTypeSumUpColumn'])['Original Estimate'].sum()
     
-    # df2['colFromIndex'] = df2.index
-    # df2.sort_values(by=['Title 1','Title 2', 'colFromIndex'])
-    # df2.reset_index(drop=True)
-
     #cleanup 
     df2.loc[df2['Work Item Type'] != 'Epic', 'Title 1'] = ''
     df2.loc[df2['Work Item Type'] != 'Feature', 'Title 2'] = ''
