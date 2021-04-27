@@ -258,7 +258,7 @@ def processSheet(df, sheetName):
     for rowIndex,row in df.iterrows(): 
         
         if(row['Process reference'] == ''):
-            print(row['Requirement ID']+'skipped due to missing process reference')
+            print('*'+row['Requirement ID']+' skipped due to missing process reference *')
             continue;
         
         if (row['Process reference'].count('.') == 3):            
@@ -434,6 +434,7 @@ def processSheet(df, sheetName):
     #print for UI feedback
     print ('creating output file:'+ 'C:\\temp\\forUpload - '+sheetName+'.csv')
     #create csv from dataframe, skip index column
+    print('Number of work items added to sheet:', df3.shape[0])
     df3.to_csv(r'C:\temp\forUpload - '+sheetName+'.csv', index=False)
 
 print('***********************************************************************************************************')        
