@@ -2,6 +2,19 @@ import pandas as pa
 import tkinter as tkr
 from tkinter import filedialog
 
+areaPrefix = 'LDI Test\\'
+
+
+inputColumnsList = ['Requirement ID','Domain','Process reference','Title','Prio','Description',
+                    'Detailed description','Requested by','Fit or Gap','Proposed Solution',
+                    'Solution Mapping','F&O Config','F&O Development','CE Config','CE Development',
+                    'PowerPlatform Config','Power Platform Development','Integration - Config (Internal)',
+                    'Integration - Inbound ( DEV / EXTERNAL)','Integration - Outbound ( DEV / EXTERNAL)',]
+
+outputColumnsList = ['Work Item Type','Area Path','Type of Work','Title 1','Title 2', 'Title 3',
+               'Title 4', 'Title 5','Complexity', 'Original Estimate','Remaining Work', 'Effort', 'Domain', 'Prio',
+               'Description', 'Detailed description', 'Proposed Solution',
+               'Solution Mapping', 'Requested by', 'Fit or Gap']
 #Constants
 taskTypesDictionary = {
                          'ax_config'    :'F&O Config',
@@ -14,6 +27,22 @@ taskTypesDictionary = {
                          'int_inbound'  :'Integration - Inbound ( DEV / EXTERNAL)',
                          'int_outbound' :'Integration - Outbound ( DEV / EXTERNAL)'
                       }
+
+areas = {
+            '01. Sales':areaPrefix+'Verkoop',
+            '02. Order':areaPrefix+'Order en Inkoop',
+            '03. Inkoop':areaPrefix+'Order en Inkoop',
+            '04. Logistics':areaPrefix+'Logistics',
+            '05. Projects':areaPrefix+'Projects',
+            '06. Service':areaPrefix+'Service',
+            '07. Fixed Assets':areaPrefix+'Finance',
+            '08. General Ledger':areaPrefix+'Finance',
+            '09. Budgeting':areaPrefix+'Finance',
+            '10. Accounts Receivable':areaPrefix+'Finance',
+            '11. Accounts Payable':areaPrefix+'Finance',
+            '12. Invoicing':areaPrefix+'Finance',
+            '13. Non-Functional':areaPrefix+'Tech'
+        }
 
 tasksDict = {
              'Config'   :'Configuration',
@@ -200,6 +229,23 @@ def browseFiles():
     
     return selectedFile
 
+def validateSheet(df, sheetName):
+    df.fillna('', inplace = True)
+    listOfColumns = df.columns.values.tolist()
+    
+    if (len(listOfColumns) != len(inputColumnsList)):
+        raise Exception('Column count doesnt match')
+
+    for columnName in inputColumnsList:
+        if (columnName not in listOfColumns):
+            raise Exception('Check spaces and new line characters. Missing column: '+columnName)
+        
+    for rowIndex,row in df.iterrows():        
+        for taskTypeTemp in taskTypesDictionary.values():
+            if (row[taskTypeTemp] != '' and (row[taskTypeTemp] not in complexities.values())):
+                raise Exception('Complexity mismatch. Check Sheet: '+sheetName+',Row: '+str(rowIndex+1)+',Task type: '+taskTypeTemp+ row[taskTypeTemp])
+                           
+        
 def processSheet(df, sheetName):
     #Initialize blank row list, this will hold the result set for the sheet before writing into dataframe
     rows_list = []
@@ -211,42 +257,55 @@ def processSheet(df, sheetName):
     df.sort_values(by=['Process reference', 'Requirement ID'], ignore_index = True, inplace=True)
         
     #Create epic and feature names based on process reference
-    df['Title 1'] = df['Process reference'].str.slice(0,7)
-    df['Title 2'] = df['Process reference'].str.slice(0,11)
+    for rowIndex,row in df.iterrows(): 
+        if (row['Process reference'].find('.') != -1):
+            splitStrings = row['Process reference'].split('.')
+        
+            df.at[rowIndex, 'Title 1'] = splitStrings[0] +'.'+ splitStrings[1]
+            df.at[rowIndex, 'Title 2'] = df.iloc[rowIndex]['Title 1']  +'.'+ splitStrings[2]
+        else:
+            df.at[rowIndex, 'Title 1'] = row['Process reference']
+            df.at[rowIndex, 'Title 2'] = row['Process reference']
+            
+        df.at[rowIndex, 'Area Path'] = areas.get(row['Domain'])
+       
+    
     df['Title 3'] = df['Requirement ID']+'-'+df['Process reference']+'-'+df['Title']
+    
     df['Work Item Type'] = 'User Story'
     #add empty columns for taskType and task names
     df['Title 4'] = ''
     df['Title 5'] = ''
+    df['Remaining Work'] = ''
     
 
     #remove the columns as we do not need them anymore
     del df['Requirement ID']
-    del df['Process reference']
+    # del df['Process reference']
     del df['Title']
 
     #replace nulls with empty strings
     df.fillna('', inplace = True)
 
     #adds task that are common to every feature
-    def addCommonTasks(rowsList,  epic, feature, story):
+    def addCommonTasks(rowsList,  epic, feature, story, areaPath):
         for taskName in commonTaskList:
             tempDict = {
                 'Work Item Type'    : 'Task',
                 'Title 4'           : taskName + ' - ' + story,
-                'Title 5'           : taskName + ' - ' + story,
                 'Original Estimate' : 0,
                 'Type of Work'      : 'Misc',
                 'Title 1'           : epic,
                 'Title 2'           : feature,
-                'Title 3'           : story
+                'Title 3'           : story,
+                'Area Path'         : areaPath
                 }    
             rowsList.append(tempDict)
             
         return rowsList
             
     #adds task type per complexity and corresponding tasks with estimates
-    def addRowsPerTaskType(rowsList, taskType, complexity,  epic, feature, story):
+    def addRowsPerTaskType(rowsList, taskType, complexity,  epic, feature, story, areaPath):
         listOfTasks = taskTypesDict().get(taskType)
         
         #add tasktype 
@@ -256,7 +315,8 @@ def processSheet(df, sheetName):
             'Complexity'        : complexity,
             'Title 1'           : epic,
             'Title 2'           : feature,
-            'Title 3'           : story             
+            'Title 3'           : story  ,
+            'Area Path'         : areaPath           
             }    
         rowsList.append(tempDict)
           
@@ -271,20 +331,22 @@ def processSheet(df, sheetName):
                 'Type of Work'      : taskType,
                 'Title 1'           : epic,
                 'Title 2'           : feature,
-                'Title 3'           : story
+                'Title 3'           : story,
+                'Area Path'         : areaPath
                 }    
+            tempDict['Remaining work'] = tempDict.get('Original Estimate')
             rowsList.append(tempDict)
         
         return rowsList
     
     #calls addRowsPerTaskType if a complextiy is defined for the proposed solution
-    def addTaskTYpes(rowList, rowSeries, epic, feature, story):
+    def addTaskTYpes(rowList, rowSeries, epic, feature, story, areaPath):
         
         for taskTypeName in taskTypesDictionary.values():
             requirementComplexity = rowSeries[taskTypeName]
             print(requirementComplexity)
             if (requirementComplexity != '' and requirementComplexity in complexities.values()):        
-                rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity, epic = epic, feature = feature, story = story)
+                rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity, epic = epic, feature = feature, story = story, areaPath=areaPath)
         return rowList        
         
     #sets to group user stories under features and features under epics  
@@ -300,7 +362,8 @@ def processSheet(df, sheetName):
             if title1 not in processedEpics:
                 tempDict = {
                     'Work Item Type': 'Epic',
-                    'Title 1': title1
+                    'Title 1': title1,
+                    'Area Path': row['Area Path']
                     }
                 rows_list.append(tempDict)
                 processedEpics.add(title1)        
@@ -309,7 +372,8 @@ def processSheet(df, sheetName):
             if title2 not in processedFeatures:
                 tempDict = {
                     'Work Item Type': 'Feature',
-                    'Title 2': title2
+                    'Title 2': title2,
+                    'Area Path': row['Area Path']
                     }
                 rows_list.append(tempDict)
                 processedFeatures.add(title2)
@@ -320,9 +384,9 @@ def processSheet(df, sheetName):
                       
             rows_list.append(row.to_dict())        
             #add level4 and level 5 work items
-            rows_list = addTaskTYpes(rows_list, row, title1, title2, row['Title 3'])  
+            rows_list = addTaskTYpes(rows_list, row, title1, title2, row['Title 3'], row['Area Path'])  
             #add tasks common to every story at level 4
-            rows_list = addCommonTasks(rows_list, title1, title2, row['Title 3'])
+            rows_list = addCommonTasks(rows_list, title1, title2, row['Title 3'], row['Area Path'])
             
     #dump the accumuated list to a dataframe            
     df2 = pa.DataFrame(rows_list)    
@@ -362,13 +426,10 @@ def processSheet(df, sheetName):
         df2.at[rowIndex, 'Effort'] = effort
         
     #copy dataframe to a new new dataframe with columns arranged in proper order
-    df3 = df2[['Work Item Type','Type of Work','Title 1','Title 2', 'Title 3',
-               'Title 4', 'Title 5','Complexity', 'Original Estimate', 'Effort', 'Domain', 'Prio',
-               'Description', 'Detailed description', 'Proposed Solution',
-               'Solution Mapping', 'Requested by', 'Fit or Gap']]        
+    df3 = df2[outputColumnsList]        
     
     #print for UI feedback
-    print ('creating output file:'+ 'D:\temp\forUpload-'+sheetName+'.csv')
+    print ('creating output file:'+ 'D:\\temp\\forUpload-'+sheetName+'.csv')
     #create csv from dataframe, skip index column
     df3.to_csv(r'C:\temp\forUpload - '+sheetName+'.csv', index=False)
                     
@@ -377,5 +438,8 @@ def processSheet(df, sheetName):
 all_dfs = pa.read_excel (browseFiles(), sheet_name=None)
 
 #process each sheet in excel to generate a seperate csv file
+for key in all_dfs.keys():
+    validateSheet(all_dfs.get(key), key)
+
 for key in all_dfs.keys():
     processSheet(all_dfs.get(key), key)
