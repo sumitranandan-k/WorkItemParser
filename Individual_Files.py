@@ -233,9 +233,6 @@ def validateSheet(df, sheetName):
     print('Validating sheet . . . . . '+sheetName)
     df.fillna('', inplace = True)
     listOfColumns = df.columns.values.tolist()
-    
-    if (len(listOfColumns) != len(inputColumnsList)):
-        raise Exception('Column count doesnt match')
 
     for columnName in inputColumnsList:
         if (columnName not in listOfColumns):
@@ -259,7 +256,12 @@ def processSheet(df, sheetName):
         
     #Create epic and feature names based on process reference
     for rowIndex,row in df.iterrows(): 
-        if (row['Process reference'].find('.') != -1):
+        
+        if(row['Process reference'] == ''):
+            print(row['Requirement ID']+'skipped due to missing process reference')
+            continue;
+        
+        if (row['Process reference'].count('.') == 3):            
             splitStrings = row['Process reference'].split('.')
         
             df.at[rowIndex, 'Title 1'] = splitStrings[0] +'.'+ splitStrings[1]
