@@ -437,6 +437,7 @@ def processSheet(df, sheetName):
     print('Number of work items added to sheet:', df3.shape[0])
     df3.to_csv(r'C:\temp\forUpload - '+sheetName+'.csv', index=False)
 
+
 print('***********************************************************************************************************')        
 print()
 print('This program can only process .xlsx files with the following format:')
