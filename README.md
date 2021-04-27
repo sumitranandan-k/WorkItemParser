@@ -1,6 +1,18 @@
 # WorkItemParser
 
+### Since any code needs to assume certain values in the output, the Work Item Parser needs the following rules for the input excel files.
+
 ## Rules for input file:
+
+### 0. Task types have to be the following, order doesn't matter. Please check for CR, LF and extra space characters
+#### F&O Development
+#### CE Config
+#### CE Development
+#### PowerPlatform Config
+#### Power Platform Development
+#### Integration - Config (Internal)
+#### Integration - Inbound ( DEV / EXTERNAL)
+#### Integration - Outbound ( DEV / EXTERNAL)
 
 #### 1. Complexities have to be:
 ##### VS - Very Simple
