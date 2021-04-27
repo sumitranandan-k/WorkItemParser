@@ -12,9 +12,9 @@ inputColumnsList = ['Requirement ID','Domain','Process reference','Title','Prio'
                     'Integration - Inbound ( DEV / EXTERNAL)','Integration - Outbound ( DEV / EXTERNAL)',]
 
 outputColumnsList = ['Work Item Type','Area Path','Type of Work','Title 1','Title 2', 'Title 3',
-               'Title 4', 'Title 5','Complexity', 'Original Estimate','Remaining Work', 'Effort', 'Domain', 'Prio',
-               'Description', 'Detailed description', 'Proposed Solution',
-               'Solution Mapping', 'Requested by', 'Fit or Gap']
+                   'Title 4', 'Title 5','Complexity', 'Original Estimate','Remaining Work', 'Effort', 'Domain', 'Prio',
+                   'Description', 'Detailed description', 'Proposed Solution',
+                   'Solution Mapping', 'Requested by', 'Fit or Gap']
 #Constants
 taskTypesDictionary = {
                          'ax_config'    :'F&O Config',
@@ -230,6 +230,7 @@ def browseFiles():
     return selectedFile
 
 def validateSheet(df, sheetName):
+    print('Validating sheet . . . . . '+sheetName)
     df.fillna('', inplace = True)
     listOfColumns = df.columns.values.tolist()
     
@@ -251,7 +252,7 @@ def processSheet(df, sheetName):
     rows_list = []
     
     #feedback - user for troubleshooting      
-    print(sheetName)
+    print('Processing sheet . . . . . '+sheetName)
     
     
     df.sort_values(by=['Process reference', 'Requirement ID'], ignore_index = True, inplace=True)
@@ -322,7 +323,7 @@ def processSheet(df, sheetName):
           
         
         for taskName in listOfTasks:
-            print (taskType + '-' + taskName + '-' + complexity)
+            # print (taskType + '-' + taskName + '-' + complexity)
             tempDict = {
                 'Work Item Type'    : 'Task',
                 'Title 4'           : taskType  + ' - ' + story,
@@ -344,7 +345,7 @@ def processSheet(df, sheetName):
         
         for taskTypeName in taskTypesDictionary.values():
             requirementComplexity = rowSeries[taskTypeName]
-            print(requirementComplexity)
+            # print(requirementComplexity)
             if (requirementComplexity != '' and requirementComplexity in complexities.values()):        
                 rowList = addRowsPerTaskType(rowsList=rowList, taskType=taskTypeName, complexity=requirementComplexity, epic = epic, feature = feature, story = story, areaPath=areaPath)
         return rowList        
@@ -355,7 +356,7 @@ def processSheet(df, sheetName):
 
     #for each row in requirements add a epic and feature if new, else nest under existing ones
     for rowIndex,row in df.iterrows():
-        print(rowIndex)
+        # print(rowIndex)
         if row['Work Item Type'] == 'User Story':           
             
             title1 = row['Title 1']
@@ -429,17 +430,44 @@ def processSheet(df, sheetName):
     df3 = df2[outputColumnsList]        
     
     #print for UI feedback
-    print ('creating output file:'+ 'D:\\temp\\forUpload-'+sheetName+'.csv')
+    print ('creating output file:'+ 'C:\\temp\\forUpload - '+sheetName+'.csv')
     #create csv from dataframe, skip index column
     df3.to_csv(r'C:\temp\forUpload - '+sheetName+'.csv', index=False)
-                    
+
+print('***********************************************************************************************************')        
+print()
+print('This program can only process .xlsx files with the following format:')
+print()
+print()
+print('Column names(Order of columns does not matter):')
+x = ','.join(inputColumnsList)
+print(x)
+print()
+print()
+print('Types of complexities:')
+x = ','.join(complexities.values())
+print(x)
+print()
+print()
+print('!Please make sure there are no CR,LF or excess spaces in the column names and complexities before you press enter')
+print()
+print('************************************************************************************************************')        
+print()
+input('Press Enter to launch file picker...')
+           
 #driver code
 #read all sheets in excel
 all_dfs = pa.read_excel (browseFiles(), sheet_name=None)
-
-#process each sheet in excel to generate a seperate csv file
+print('************************************************************************************************************')     
+#check for data entry errors
 for key in all_dfs.keys():
     validateSheet(all_dfs.get(key), key)
-
+    
+print('Validation complete')   
+print('************************************************************************************************************')      
+#process each sheet in excel to generate a seperate csv file
 for key in all_dfs.keys():
     processSheet(all_dfs.get(key), key)
+    
+print('Processing complete')   
+print('************************************************************************************************************')      
