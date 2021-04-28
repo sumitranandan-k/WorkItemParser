@@ -286,9 +286,9 @@ def processSheet(df, sheetName):
     
 
     #remove the columns as we do not need them anymore
-    del df['Requirement ID']
+    # del df['Requirement ID']
     # del df['Process reference']
-    del df['Title']
+    # del df['Title']
 
     #replace nulls with empty strings
     df.fillna('', inplace = True)
@@ -495,13 +495,17 @@ for key in toBeProcessed.keys():
         df.columns = formattedHeaders
         df = df.reset_index(drop=True)
         
+        df = df.iloc[1: , :] #Added columns, so remove first row
+        
         # Correct typographical mistakes
         df = df.replace('S-Simple', 'S - Simple')
         df = df.replace('M-Medium', 'M - Medium')
         df = df.replace('C-Complex', 'C - Complex')
         df = df.replace('N.A.', '')
         
-        df = df.iloc[1: , :] #Added columns, so remove first row
+        if ('Status' in df.columns):
+            df = df.loc[df['Status'] == '5. Estimated']
+            
         framesToBeProcessed.__setitem__(key, df)   
     
 #check for data entry errors
