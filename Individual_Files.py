@@ -1,6 +1,9 @@
 import pandas as pa
 import tkinter as tkr
 from tkinter import filedialog
+import warnings
+    
+warnings.filterwarnings('ignore')
 
 areaPrefix = 'LDI Test\\'
 
@@ -434,9 +437,10 @@ def processSheet(df, sheetName):
     #print for UI feedback
     print ('creating output file:'+ 'C:\\temp\\forUpload - '+sheetName+'.csv')
     #create csv from dataframe, skip index column
-    print('Number of work items added to sheet:', df3.shape[0])
+    # print('Number of work items added to sheet:', df3.shape[0])
     df3.to_csv(r'C:\temp\forUpload - '+sheetName+'.csv', index=False)
 
+#driver code
 
 print('***********************************************************************************************************')        
 print()
@@ -459,19 +463,57 @@ print('*************************************************************************
 print()
 input('Press Enter to launch file picker...')
            
-#driver code
 #read all sheets in excel
 all_dfs = pa.read_excel (browseFiles(), sheet_name=None)
 print('************************************************************************************************************')     
+print('Finding sheets to process......')
+toBeProcessed = {}
+framesToBeProcessed = {}
+
+for key in all_dfs.keys():    
+    df = all_dfs.get(key)            
+    colsList = list(df.columns.values)
+    for rowIndex,row in df.iterrows():
+        #print('Searching for header row in '+key)
+        if (df.iloc[rowIndex][0] == 'Requirement ID'):            
+            #print('Header found at row ', rowIndex)
+            toBeProcessed.__setitem__(key, rowIndex)
+            break
+
+for key in toBeProcessed.keys():
+    # print(key)
+    df = all_dfs.get(key).iloc[toBeProcessed.get(key): , :]
+    df.fillna('', inplace = True)
+    new_header = df.iloc[0] 
+    
+    if len(new_header) != 0:
+        formattedHeaders = []
+        for sub in new_header:
+            # Replace any new line characters with spaces
+            formattedHeaders.append(sub.replace('\n', ' '))
+        
+        df.columns = formattedHeaders
+        df = df.reset_index(drop=True)
+        
+        # Correct typographical mistakes
+        df = df.replace('S-Simple', 'S - Simple')
+        df = df.replace('M-Medium', 'M - Medium')
+        df = df.replace('C-Complex', 'C - Complex')
+        df = df.replace('N.A.', '')
+        
+        df = df.iloc[1: , :] #Added columns, so remove first row
+        framesToBeProcessed.__setitem__(key, df)   
+    
 #check for data entry errors
-for key in all_dfs.keys():
-    validateSheet(all_dfs.get(key), key)
+
+for key in framesToBeProcessed.keys():
+    validateSheet(framesToBeProcessed.get(key), key)
     
 print('Validation complete')   
 print('************************************************************************************************************')      
 #process each sheet in excel to generate a seperate csv file
-for key in all_dfs.keys():
-    processSheet(all_dfs.get(key), key)
+for key in framesToBeProcessed.keys():
+    processSheet(framesToBeProcessed.get(key), key)
     
 print('Processing complete')   
 print('************************************************************************************************************')      
