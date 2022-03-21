@@ -5,20 +5,24 @@ import warnings
     
 warnings.filterwarnings('ignore')
 
-areaPrefix = 'LDI Test\\'
+areaPrefix = 'LDI\\'
+filterField = 'Phase'
+filterValue = '1. - Go-lIve'
 
+statusList = ['Oorspronkelijk','Nieuw','Geupdate']
 
+#Constants
 inputColumnsList = ['Requirement ID','Domain','Process reference','Title','Prio','Description',
                     'Detailed description','Requested by','Fit or Gap','Proposed Solution',
                     'Solution Mapping','F&O Config','F&O Development','CE Config','CE Development',
                     'PowerPlatform Config','Power Platform Development','Integration - Config (Internal)',
-                    'Integration - Inbound ( DEV / EXTERNAL)','Integration - Outbound ( DEV / EXTERNAL)',]
+                    'Integration - Inbound ( DEV / EXTERNAL)','Integration - Outbound ( DEV / EXTERNAL)','Phase', 'Referentie status']
 
 outputColumnsList = ['Work Item Type','Area Path','Type of Work','Title 1','Title 2', 'Title 3',
-                   'Title 4', 'Title 5','Complexity', 'Original Estimate','Remaining Work', 'Effort', 'Domain', 'Prio',
+                   'Title 4', 'Title 5','Complexity', 'Original Estimate','Remaining Work', 'Effort', 'Domain', 
                    'Description', 'Detailed description', 'Proposed Solution',
-                   'Solution Mapping', 'Requested by', 'Fit or Gap']
-#Constants
+                   'Solution Mapping', 'Requested by', 'Fit or Gap', 'Process reference', 'Group ID', 'Phase','Referentie status']
+
 taskTypesDictionary = {
                          'ax_config'    :'F&O Config',
                          'ax_dev'       :'F&O Development',
@@ -35,15 +39,15 @@ areas = {
             '01. Sales':areaPrefix+'Verkoop',
             '02. Order':areaPrefix+'Order en Inkoop',
             '03. Inkoop':areaPrefix+'Order en Inkoop',
-            '04. Logistics':areaPrefix+'Logistics',
-            '05. Projects':areaPrefix+'Projects',
+            '04. Logistics':areaPrefix+'Logistiek',
+            '05. Projects':areaPrefix+'Projecten',
             '06. Service':areaPrefix+'Service',
-            '07. Fixed Assets':areaPrefix+'Finance',
-            '08. General Ledger':areaPrefix+'Finance',
-            '09. Budgeting':areaPrefix+'Finance',
-            '10. Accounts Receivable':areaPrefix+'Finance',
-            '11. Accounts Payable':areaPrefix+'Finance',
-            '12. Invoicing':areaPrefix+'Finance',
+            '07. Fixed Assets':areaPrefix+'Financien',
+            '08. General Ledger':areaPrefix+'Financien',
+            '09. Budgeting':areaPrefix+'Financien',
+            '10. Accounts Receivable':areaPrefix+'Financien',
+            '11. Accounts Payable':areaPrefix+'Financien',
+            '12. Invoicing':areaPrefix+'Financien',
             '13. Non-Functional':areaPrefix+'Tech'
         }
 
@@ -57,7 +61,7 @@ tasksDict = {
              'Release'  : 'Release to VT environment'
             }
 
-commonTaskList = ['Process test', 'QRC - Quick Reference Cards', 'Training', 'Demo / Acceptance test', 'Key user training']
+#commonTaskList = ['Process test', 'QRC - Quick Reference Cards', 'Training', 'Demo / Acceptance test']
     
 complexities = {
                 'VS'    :'VS - Very Simple',
@@ -244,7 +248,7 @@ def validateSheet(df, sheetName):
     for rowIndex,row in df.iterrows():        
         for taskTypeTemp in taskTypesDictionary.values():
             if (row[taskTypeTemp] != '' and (row[taskTypeTemp] not in complexities.values())):
-                raise Exception('Complexity mismatch. Check Sheet: '+sheetName+',Row: '+str(rowIndex+1)+',Task type: '+taskTypeTemp+ row[taskTypeTemp])
+                raise Exception('Complexity mismatch. Check Sheet: '+sheetName+',Row: '+str(rowIndex+1)+',Task type: '+taskTypeTemp+'. Invalid complexity: '+row[taskTypeTemp])
                            
         
 def processSheet(df, sheetName):
@@ -252,13 +256,17 @@ def processSheet(df, sheetName):
     rows_list = []
     
     #feedback - user for troubleshooting      
-    print('Processing sheet . . . . . '+sheetName)
+    print('Processing sheet - '+sheetName)
     
     
     df.sort_values(by=['Process reference', 'Requirement ID'], ignore_index = True, inplace=True)
         
     #Create epic and feature names based on process reference
     for rowIndex,row in df.iterrows(): 
+        
+        if (statusList.__contains__(row['Referentie status']) == False):
+            print('*'+row['Requirement ID']+' skipped due to status - ' + row['Referentie status'])
+            continue;
         
         if(row['Process reference'] == ''):
             print('*'+row['Requirement ID']+' skipped due to missing process reference *')
@@ -278,7 +286,7 @@ def processSheet(df, sheetName):
     
     df['Title 3'] = df['Requirement ID']+'-'+df['Process reference']+'-'+df['Title']
     
-    df['Work Item Type'] = 'User Story'
+    df['Work Item Type'] = 'Feature'
     #add empty columns for taskType and task names
     df['Title 4'] = ''
     df['Title 5'] = ''
@@ -292,21 +300,45 @@ def processSheet(df, sheetName):
 
     #replace nulls with empty strings
     df.fillna('', inplace = True)
-
-    #adds task that are common to every feature
-    def addCommonTasks(rowsList,  epic, feature, story, areaPath):
-        for taskName in commonTaskList:
-            tempDict = {
-                'Work Item Type'    : 'Task',
-                'Title 4'           : taskName + ' - ' + story,
+    
+    def constructDict(epic, feature, story, areaPath, taskName, taskType):
+        return {
+                'Work Item Type'    : taskType,
+                'Title 4'           : taskName,
+                'Title 5'           : taskName,
                 'Original Estimate' : 0,
                 'Type of Work'      : 'Misc',
                 'Title 1'           : epic,
                 'Title 2'           : feature,
                 'Title 3'           : story,
                 'Area Path'         : areaPath
-                }    
-            rowsList.append(tempDict)
+                }
+
+    #adds task that are common to every feature
+    def addCommonTasks(rowsList,  epic, feature, story, areaPath):
+        rowsList.append(constructDict(epic, feature, story, areaPath, 'Process test' + ' - ' + story, 'User Story'))
+        rowsList.append(constructDict(epic, feature, story, areaPath, 'Process test' + ' - ' + story, 'Task'))
+
+        rowsList.append(constructDict(epic, feature, story, areaPath, 'Demo/Acceptance test' + ' - ' + story, 'User Story'))
+        rowsList.append(constructDict(epic, feature, story, areaPath, 'Demo/Acceptance test' + ' - ' + story, 'Task'))
+        
+        rowsList.append(constructDict(epic, feature, story, areaPath, 'Training' + ' - ' + story, 'User Story'))
+        rowsList.append(constructDict(epic, feature, story, areaPath, 'QRC - Quick Reference Cards' + ' - ' + story, 'Task'))
+        rowsList.append(constructDict(epic, feature, story, areaPath, 'Training' + ' - ' + story, 'Task'))
+        
+        # commonTaskList = ['Process test', 'QRC - Quick Reference Cards', 'Training', 'Demo / Acceptance test']
+        # for taskName in commonTaskList:
+        #     tempDict = {
+        #         'Work Item Type'    : 'Task',
+        #         'Title 4'           : taskName + ' - ' + story,
+        #         'Original Estimate' : 0,
+        #         'Type of Work'      : 'Misc',
+        #         'Title 1'           : epic,
+        #         'Title 2'           : feature,
+        #         'Title 3'           : story,
+        #         'Area Path'         : areaPath
+        #         }    
+        #     rowsList.append(tempDict)
             
         return rowsList
             
@@ -316,7 +348,7 @@ def processSheet(df, sheetName):
         
         #add tasktype 
         tempDict = {
-            'Work Item Type'    : 'Task Type',
+            'Work Item Type'    : 'User Story',
             'Title 4'           : taskType + ' - ' + story,
             'Complexity'        : complexity,
             'Title 1'           : epic,
@@ -338,6 +370,7 @@ def processSheet(df, sheetName):
                 'Title 1'           : epic,
                 'Title 2'           : feature,
                 'Title 3'           : story,
+                'Complexity'        : complexity,
                 'Area Path'         : areaPath
                 }    
             tempDict['Remaining work'] = tempDict.get('Original Estimate')
@@ -362,12 +395,12 @@ def processSheet(df, sheetName):
     #for each row in requirements add a epic and feature if new, else nest under existing ones
     for rowIndex,row in df.iterrows():
         # print(rowIndex)
-        if row['Work Item Type'] == 'User Story':           
+        if row['Work Item Type'] == 'Feature':           
             
             title1 = row['Title 1']
             if title1 not in processedEpics:
                 tempDict = {
-                    'Work Item Type': 'Epic',
+                    'Work Item Type': 'Process',
                     'Title 1': title1,
                     'Area Path': row['Area Path']
                     }
@@ -377,7 +410,7 @@ def processSheet(df, sheetName):
             title2 = row['Title 2']
             if title2 not in processedFeatures:
                 tempDict = {
-                    'Work Item Type': 'Feature',
+                    'Work Item Type': 'Epic',
                     'Title 2': title2,
                     'Area Path': row['Area Path']
                     }
@@ -387,13 +420,16 @@ def processSheet(df, sheetName):
             #add the requirement as story  
             row['Title 1'] = title1
             row['Title 2'] = title2
-                      
+                                  
             rows_list.append(row.to_dict())        
             #add level4 and level 5 work items
             rows_list = addTaskTYpes(rows_list, row, title1, title2, row['Title 3'], row['Area Path'])  
             #add tasks common to every story at level 4
             rows_list = addCommonTasks(rows_list, title1, title2, row['Title 3'], row['Area Path'])
             
+    #if no valid requirements found then skip furthur processing
+    if (rows_list.__len__() == 0):
+        return
     #dump the accumuated list to a dataframe            
     df2 = pa.DataFrame(rows_list)    
     #clean up nulls, replace with empty string
@@ -412,19 +448,21 @@ def processSheet(df, sheetName):
     taskTypeSumUp = df2.groupby(['TaskTypeSumUpColumn'])['Original Estimate'].sum()
     
     #cleanup 
-    df2.loc[df2['Work Item Type'] != 'Epic', 'Title 1'] = ''
-    df2.loc[df2['Work Item Type'] != 'Feature', 'Title 2'] = ''
-    df2.loc[df2['Work Item Type'] != 'User Story', 'Title 3'] = ''    
+    df2.loc[df2['Work Item Type'] != 'Process', 'Title 1'] = ''
+    df2.loc[df2['Work Item Type'] != 'Epic', 'Title 2'] = ''
+    df2.loc[df2['Work Item Type'] != 'Feature', 'Title 3'] = ''    
+    df2.loc[df2['Work Item Type'] != 'User Story', 'Title 4'] = ''  
+    df2.loc[df2['Work Item Type'] != 'Task', 'Title 5'] = ''  
    
     for rowIndex,row in df2.iterrows():
         effort = 0
-        if (row['Work Item Type'] == 'Epic' and epicSumUp[row['Title 1']]):
+        if (row['Work Item Type'] == 'Process' and epicSumUp[row['Title 1']]):
             effort = epicSumUp[row['Title 1']]
-        if (row['Work Item Type'] == 'Feature' and featureSumUp[row['Title 2']] != 0):
+        if (row['Work Item Type'] == 'Epic' and featureSumUp[row['Title 2']] != 0):
             effort = featureSumUp[row['Title 2']]
-        if (row['Work Item Type'] == 'User Story' and storySumUp[row['Title 3']] != 0):
+        if (row['Work Item Type'] == 'Feature' and storySumUp[row['Title 3']] != 0):
             effort = storySumUp[row['Title 3']]
-        if (row['Work Item Type'] == 'Task Type' and taskTypeSumUp[row['TaskTypeSumUpColumn']] != 0):
+        if (row['Work Item Type'] == 'User Story' and taskTypeSumUp[row['TaskTypeSumUpColumn']] != 0):
             effort = taskTypeSumUp[row['TaskTypeSumUpColumn']]
         if (row['Work Item Type'] == 'Task' and row['Title 5'] != ''):
             df2.at[rowIndex, 'Title 4'] = ''                        
@@ -467,11 +505,16 @@ input('Press Enter to launch file picker...')
 all_dfs = pa.read_excel (browseFiles(), sheet_name=None)
 print('************************************************************************************************************')     
 print('Finding sheets to process......')
-toBeProcessed = {}
-framesToBeProcessed = {}
+toBeProcessed = {}  #All sheets with requirements
+framesToBeProcessed = {} #All sheets with estimated requirements
 
 for key in all_dfs.keys():    
-    df = all_dfs.get(key)            
+    # Skip consolidated sheet
+    if (key == 'AllData'):
+        continue
+    df = all_dfs.get(key)      
+    # Reset column indexes
+    df = df.T.reset_index(drop=True).T      
     colsList = list(df.columns.values)
     for rowIndex,row in df.iterrows():
         #print('Searching for header row in '+key)
@@ -484,13 +527,19 @@ for key in toBeProcessed.keys():
     # print(key)
     df = all_dfs.get(key).iloc[toBeProcessed.get(key): , :]
     df.fillna('', inplace = True)
+    
+    # / is not allowed in field name in Dev ops
+    df = df.replace('Fit/Gap', 'Fit or Gap')
     new_header = df.iloc[0] 
     
     if len(new_header) != 0:
         formattedHeaders = []
         for sub in new_header:
-            # Replace any new line characters with spaces
+            # Replace any new line characters in column headers with spaces
             formattedHeaders.append(sub.replace('\n', ' '))
+        
+        
+        # formattedHeaders = formattedHeaders.replace('Fit/Gap', 'Fit or Gap')
         
         df.columns = formattedHeaders
         df = df.reset_index(drop=True)
@@ -502,11 +551,16 @@ for key in toBeProcessed.keys():
         df = df.replace('M-Medium', 'M - Medium')
         df = df.replace('C-Complex', 'C - Complex')
         df = df.replace('N.A.', '')
+        # df = df.replace('Fit/Gap', '')        
         
-        if ('Status' in df.columns):
-            df = df.loc[df['Status'] == '5. Estimated']
-            
-        framesToBeProcessed.__setitem__(key, df)   
+        if (filterField in df.columns):
+            df = df.loc[df[filterField] == filterValue]
+            df = df[df['Referentie status'].isin(statusList)]
+
+        if df.shape[0] > 1:            
+            framesToBeProcessed.__setitem__(key, df)   
+        else:
+            print('Skipping sheet - '+key+'. No '+ 'requirements with '+filterField+" value-"+filterValue)
     
 #check for data entry errors
 
@@ -516,8 +570,18 @@ for key in framesToBeProcessed.keys():
 print('Validation complete')   
 print('************************************************************************************************************')      
 #process each sheet in excel to generate a seperate csv file
-for key in framesToBeProcessed.keys():
-    processSheet(framesToBeProcessed.get(key), key)
+if (framesToBeProcessed.keys().__len__() == 0):
+    print("No requirements found with "+filterField+" value-"+filterValue)
     
+else:
+    print('Sheets with requirements with '+filterField+" value-"+filterValue)
+    print(framesToBeProcessed.keys())
+    print('************************************************************************************************************')      
+    print('Preparing sheets for processing....')
+          
+    for key in framesToBeProcessed.keys():
+        if (key in framesToBeProcessed):
+            processSheet(framesToBeProcessed.get(key), key)
+        
 print('Processing complete')   
 print('************************************************************************************************************')      
